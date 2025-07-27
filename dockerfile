@@ -1,0 +1,18 @@
+FROM golang:1.24.5-alpine3.22 AS builder
+
+WORKDIR /build
+
+#Build
+COPY . .
+RUN go build -o ./bin/digits_say
+
+
+FROM alpine:3.22.1 AS runner
+
+WORKDIR /workspace
+
+#Copy
+COPY --from=builder /build/bin/digits_say ./digits_say
+
+#Start
+CMD ["./digits_say"]
