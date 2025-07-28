@@ -103,12 +103,12 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 			user = registeredUser
 			exist = true
 
-			msg := MakeMenuMessage(*user, update)
+			msg := MakeStartMenu(*user, update)
 			l.bot.Send(msg)
 			return
 		}
 		if exist {
-			msg := MakeMenuMessage(*user, update)
+			msg := MakeStartMenu(*user, update)
 			l.bot.Send(msg)
 			return
 		}
@@ -223,7 +223,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твоя дата рождения успешно сохранена.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
-		msg = MakeMenuMessage(*user, update)
+		msg = MakeStartMenu(*user, update)
 		l.bot.Send(msg)
 
 		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
@@ -261,7 +261,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твой Email успешно сохранён.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
-		msg = MakeMenuMessage(*user, update)
+		msg = MakeStartMenu(*user, update)
 		l.bot.Send(msg)
 
 		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
@@ -291,7 +291,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твоё полное имя успешно сохранено.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
-		msg = MakeMenuMessage(*user, update)
+		msg = MakeStartMenu(*user, update)
 		l.bot.Send(msg)
 
 		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
@@ -315,7 +315,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 	}
 }
 
-func MakeMenuMessage(user storage.User, update tgbotapi.Update) tgbotapi.MessageConfig {
+func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageConfig {
 	buttons := map[string]tgbotapi.InlineKeyboardButton{
 		"Birthdate": tgbotapi.NewInlineKeyboardButtonData("Ввести дату рождения", "State=RegisterBirthdate"),
 		"Email":     tgbotapi.NewInlineKeyboardButtonData("Ввести Email", "State=RegisterEmail"),
@@ -332,7 +332,7 @@ func MakeMenuMessage(user storage.User, update tgbotapi.Update) tgbotapi.Message
 	}
 
 	CurrentData := fmt.Sprintf(
-		"Текущие данные:\nПолное имя: %s\nEmail: %s\nДата рождения: %s",
+		"Полное имя: %s\nEmail: %s\nДата рождения: %s",
 		user.FullName, user.Email, birth,
 	)
 
@@ -344,7 +344,7 @@ func MakeMenuMessage(user storage.User, update tgbotapi.Update) tgbotapi.Message
 		Keyboard = append(Keyboard, buttons["FullName"])
 		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Keyboard)
 
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nМожешь bзменить свою анкету.\n")
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nМожешь изменить свою анкету.\n")
 		msg.ParseMode = tgbotapi.ModeHTML
 		msg.ReplyMarkup = RegisterMarkup
 		msg.ReplyToMessageID = update.Message.MessageID
