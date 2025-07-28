@@ -30,7 +30,7 @@ func Init() *telegram.Config {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("No .env file")
+		log.Println(".env file error: " + err.Error())
 	}
 
 	config.ApiToken = os.Getenv("TGAPIToken")

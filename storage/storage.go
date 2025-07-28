@@ -9,14 +9,15 @@ import (
 )
 
 type User struct {
-	ID           *models.RecordID      `json:"id,omitempty"`
-	State        string                `json:"State"`
-	UserName     string                `json:"UserName"`
-	Name         string                `json:"Name"`
-	Surname      string                `json:"Surname"`
-	LanguageCode string                `json:"LanguageCode"`
-	Email        string                `json:"Email"`
-	Birthdate    models.CustomDateTime `json:"Birthdate"`
+	ID           models.RecordID `json:"id,omitempty"`
+	State        string          `json:"State"`
+	UserName     string          `json:"UserName"`
+	Name         string          `json:"Name"`
+	Surname      string          `json:"Surname"`
+	FullName     string          `json:"FullName"`
+	LanguageCode string          `json:"LanguageCode"`
+	Email        string          `json:"Email"`
+	Birthdate    string          `json:"Birthdate"`
 }
 
 type DBConfig struct {
@@ -58,7 +59,8 @@ func GetUserByID(id string, db *surrealdb.DB) (user *User, exist bool, err error
 	if err != nil {
 		return nil, false, err
 	}
-	if user == nil || user.ID == nil {
+
+	if user == nil || user.ID == (models.RecordID{}) {
 		return nil, false, nil
 	}
 
@@ -85,9 +87,4 @@ func RegisterNewUser(user User, db *surrealdb.DB) (userInDb *User, err error) {
 	fmt.Printf("Registered a new user with a map %+v\n", userInDb)
 
 	return userInDb, nil
-}
-
-func (u *User) UpdateUser(db *surrealdb.DB) error {
-
-	return nil
 }
