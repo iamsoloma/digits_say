@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	surrealdb "github.com/surrealdb/surrealdb.go"
 	"github.com/surrealdb/surrealdb.go/pkg/models"
@@ -84,7 +83,6 @@ func RegisterNewUser(user User, db *surrealdb.DB) (userInDb *User, err error) {
 	if err != nil {
 		return userInDb, err
 	}
-	fmt.Printf("Registered a new user with a map %+v\n", userInDb)
 
 	return userInDb, nil
 }

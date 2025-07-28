@@ -28,7 +28,6 @@ type TelegramListener struct {
 	Db *surrealdb.DB
 }
 
-
 func NewListener(config Config) (TelegramBot *TelegramListener, err error) {
 	db, err := storage.ConnectToSurreal(config.DBConfig)
 	if err != nil {
@@ -85,7 +84,6 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 		}
 
 		if !exist {
-			fmt.Printf("tg%d\n", update.Message.From.ID)
 			userData := storage.User{
 				ID:           models.RecordID{Table: "Users", ID: fmt.Sprintf("tg%d", update.Message.From.ID)},
 				UserName:     update.Message.From.UserName,
@@ -107,9 +105,12 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 
 			msg := MakeMenuMessage(*user, update)
 			l.bot.Send(msg)
-		} else {
+			return
+		}
+		if exist {
 			msg := MakeMenuMessage(*user, update)
 			l.bot.Send(msg)
+			return
 		}
 
 	}
@@ -336,21 +337,35 @@ func MakeMenuMessage(user storage.User, update tgbotapi.Update) tgbotapi.Message
 	)
 
 	Keyboard := tgbotapi.NewInlineKeyboardRow()
-	if user.Birthdate == "" {
+
+	if user.FullName != "" && user.Birthdate != "" && user.FullName != "" {
 		Keyboard = append(Keyboard, buttons["Birthdate"])
-	}
-	if user.Email == "" {
 		Keyboard = append(Keyboard, buttons["Email"])
-	}
-	if user.FullName == "" {
 		Keyboard = append(Keyboard, buttons["FullName"])
+		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Keyboard)
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nМожешь bзменить свою анкету.\n")
+		msg.ParseMode = tgbotapi.ModeHTML
+		msg.ReplyMarkup = RegisterMarkup
+		msg.ReplyToMessageID = update.Message.MessageID
+		return msg
+	} else {
+		if user.Birthdate == "" {
+			Keyboard = append(Keyboard, buttons["Birthdate"])
+		}
+		if user.Email == "" {
+			Keyboard = append(Keyboard, buttons["Email"])
+		}
+		if user.FullName == "" {
+			Keyboard = append(Keyboard, buttons["FullName"])
+		}
+		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Keyboard)
+
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nЗаполни свою анкету.\n")
+		msg.ParseMode = tgbotapi.ModeHTML
+		msg.ReplyMarkup = RegisterMarkup
+		msg.ReplyToMessageID = update.Message.MessageID
+		return msg
 	}
 
-	RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Keyboard)
-
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nЗаполни свою анкету.\n")
-	msg.ParseMode = tgbotapi.ModeHTML
-	msg.ReplyMarkup = RegisterMarkup
-	msg.ReplyToMessageID = update.Message.MessageID
-	return msg
 }
