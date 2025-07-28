@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"digits_say/digits"
 	"digits_say/storage"
 	"fmt"
 	"log"
@@ -240,6 +241,20 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твоя дата рождения успешно сохранена.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
+
+		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
+			consciousnessNumber, err := digits.GetConsciousnessNumber(user.Birthdate)
+			if err != nil {
+				log.Println("Error calculating consciousness number: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего сознания. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твой номер сознания: %d", consciousnessNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+		}
 	} else if user.State == "RegisterEmail" {
 		_, err := mail.ParseAddress(update.Message.Text)
 		if err != nil {
@@ -262,6 +277,20 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твой Email успешно сохранён.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
+
+		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
+			consciousnessNumber, err := digits.GetConsciousnessNumber(user.Birthdate)
+			if err != nil {
+				log.Println("Error calculating consciousness number: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего сознания. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твой номер сознания: %d", consciousnessNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+		}
 	} else if user.State == "RegisterFullName" {
 		user.FullName = update.Message.Text
 		user.State = ""
@@ -276,6 +305,20 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Твоё полное имя успешно сохранено.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
+
+		if user.Birthdate != "" && user.Email != "" && user.FullName != "" {
+			consciousnessNumber, err := digits.GetConsciousnessNumber(user.Birthdate)
+			if err != nil {
+				log.Println("Error calculating consciousness number: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего сознания. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твой номер сознания: %d", consciousnessNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+		}
 	} else if user.State == "" {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Извини, я ещё не знаю, что тебе отвечать.")
 		msg.ReplyToMessageID = update.Message.MessageID
