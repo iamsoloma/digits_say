@@ -34,7 +34,7 @@ func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageCo
 	Row2 := tgbotapi.NewInlineKeyboardRow()
 	Row3 := tgbotapi.NewInlineKeyboardRow()
 
-	if user.FullName != "" && user.Birthdate != "" && user.FullName != "" && user.State["Register"] != "Finished" {
+	if user.FullName != "" && user.Birthdate != "" && user.Email != "" && user.State["Register"] != "Finished" {
 		Row1 = append(Row1, buttons["Birthdate"])
 		Row1 = append(Row1, buttons["FullName"])
 		Row2 = append(Row2, buttons["Email"])
@@ -54,13 +54,17 @@ func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageCo
 		if user.Birthdate == "" {
 			Row1 = append(Row1, buttons["Birthdate"])
 		}
-		if user.Email == "" {
-			Row1 = append(Row1, buttons["Email"])
-		}
 		if user.FullName == "" {
-			Row2 = append(Row2, buttons["FullName"])
+			Row1 = append(Row1, buttons["FullName"])
 		}
-		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Row1, Row2, Row3)
+		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Row1)
+		if user.Email == "" && (user.Birthdate == "" || user.FullName == "") {
+			Row2 = append(Row2, buttons["Email"])
+			RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Row1, Row2)
+		} else if user.Email == "" && !(user.Birthdate == "" || user.FullName == "") {
+			Row2 = append(Row2, buttons["Email"])
+			RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Row2)
+		}
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nЗаполни свою анкету.\n")
 		msg.ParseMode = tgbotapi.ModeHTML
