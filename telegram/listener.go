@@ -9,7 +9,6 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/surrealdb/surrealdb.go"
 	"github.com/surrealdb/surrealdb.go/pkg/models"
 )
 
@@ -25,11 +24,14 @@ type TelegramListener struct {
 	bot          *tgbotapi.BotAPI
 	updateConfig *tgbotapi.UpdateConfig
 
-	Db *surrealdb.DB
+	storage *storage.Storage
 }
 
 func NewListener(config Config) (TelegramBot *TelegramListener, err error) {
-	db, err := storage.ConnectToSurreal(config.DBConfig)
+	storage := storage.Storage{
+		DBConfig: config.DBConfig,
+	}
+	err = storage.ConnectToSurreal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SurrealDB: %w", err)
 	}
@@ -51,7 +53,7 @@ func NewListener(config Config) (TelegramBot *TelegramListener, err error) {
 		Config:       &config,
 		bot:          bot,
 		updateConfig: &updateConfig,
-		Db:           db,
+		storage:      &storage,
 	}, nil
 }
 
@@ -74,7 +76,7 @@ func (l *TelegramListener) Start() {
 
 func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 	if update.Message.Text == "/start" {
-		user, exist, err := storage.GetUserByID(fmt.Sprintf("tg%d", update.Message.From.ID), l.Db)
+		user, exist, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", update.Message.From.ID))
 		if err != nil {
 			log.Println("Error getting user by Telegram ID: ", err)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
@@ -92,7 +94,7 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 				LanguageCode: update.Message.From.LanguageCode,
 			}
 			fmt.Printf("Registering new user with data: %#v\n", userData)
-			registeredUser, err := storage.RegisterNewUser(userData, l.Db)
+			registeredUser, err := l.storage.RegisterNewUser(userData)
 			if err != nil {
 				log.Println("Error registering new user: ", err)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при регистрации. Попробуй позже.")
@@ -118,7 +120,7 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 
 func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 	if callback.Data == "State=RegisterBirthdate" {
-		user, _, err := storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID), l.Db)
+		user, _, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID))
 		if err != nil {
 			log.Println("Error getting user by Telegram ID: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
@@ -127,7 +129,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			return
 		}
 		user.State = "RegisterBirthdate"
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.")
@@ -140,7 +142,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 		msg.ReplyToMessageID = callback.Message.MessageID
 		l.bot.Send(msg)
 	} else if callback.Data == "State=RegisterEmail" {
-		user, _, err := storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID), l.Db)
+		user, _, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID))
 		if err != nil {
 			log.Println("Error getting user by Telegram ID: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
@@ -149,7 +151,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			return
 		}
 		user.State = "RegisterEmail"
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.")
@@ -161,7 +163,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 		msg.ReplyToMessageID = callback.Message.MessageID
 		l.bot.Send(msg)
 	} else if callback.Data == "State=RegisterFullName" {
-		user, _, err := storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID), l.Db)
+		user, _, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID))
 		if err != nil {
 			log.Println("Error getting user by Telegram ID: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
@@ -170,7 +172,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			return
 		}
 		user.State = "RegisterFullName"
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
 			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.")
@@ -178,14 +180,14 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			l.bot.Send(msg)
 			return
 		}
-		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи свое полное имя латинскими(Егор -> Georgiy || Надя -> Nadezda): ")
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи свое полное имя латинскими буквами как в загране или банковской карте(Nadezda, Vitaliy):")
 		msg.ReplyToMessageID = callback.Message.MessageID
 		l.bot.Send(msg)
 	}
 }
 
 func (l *TelegramListener) HandleText(update tgbotapi.Update) {
-	user, exist, err := storage.GetUserByID(fmt.Sprintf("tg%d", update.Message.From.ID), l.Db)
+	user, exist, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", update.Message.From.ID))
 	if err != nil {
 		log.Println("Error getting user by Telegram ID: ", err)
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
@@ -212,7 +214,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		}
 		user.Birthdate = birthdate.Format("2006-01-02") //models.CustomDateTime{Time: birthdate}
 		user.State = ""
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user birthdate: ", err)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при обновлении даты рождения. Попробуй позже.")
@@ -250,7 +252,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		}
 		user.Email = update.Message.Text
 		user.State = ""
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user email: ", err)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при обновлении Email. Попробуй позже.")
@@ -280,7 +282,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 	} else if user.State == "RegisterFullName" {
 		user.FullName = update.Message.Text
 		user.State = ""
-		_, err = storage.UpdateUser(*user, l.Db)
+		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user full name: ", err)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при обновлении полного имени. Попробуй позже.")
