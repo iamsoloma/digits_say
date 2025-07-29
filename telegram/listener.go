@@ -88,6 +88,7 @@ func (l *TelegramListener) HandleCommad(update tgbotapi.Update) {
 		if !exist {
 			userData := storage.User{
 				ID:           models.RecordID{Table: "Users", ID: fmt.Sprintf("tg%d", update.Message.From.ID)},
+				State:        map[string]interface{}{},
 				UserName:     update.Message.From.UserName,
 				Name:         update.Message.From.FirstName,
 				Surname:      update.Message.From.LastName,
@@ -128,7 +129,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			l.bot.Send(msg)
 			return
 		}
-		user.State = "RegisterBirthdate"
+		user.State["Register"] = "Birthdate"
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
@@ -150,7 +151,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			l.bot.Send(msg)
 			return
 		}
-		user.State = "RegisterEmail"
+		user.State["Register"] = "Email"
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
@@ -171,7 +172,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			l.bot.Send(msg)
 			return
 		}
-		user.State = "RegisterFullName"
+		user.State["Register"] = "FullName"
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user state: ", err)
@@ -183,6 +184,34 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи свое полное имя латинскими буквами как в загране или банковской карте(Nadezda, Vitaliy):")
 		msg.ReplyToMessageID = callback.Message.MessageID
 		l.bot.Send(msg)
+	} else if callback.Data == "State=RegisterFinished" {
+		user, _, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID))
+		if err != nil {
+			log.Println("Error getting user by Telegram ID: ", err)
+			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
+			msg.ReplyToMessageID = callback.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+		user.State["Register"] = "Finished"
+		_, err = l.storage.UpdateUser(*user)
+		if err != nil {
+			log.Println("Error updating user state: ", err)
+			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.")
+			msg.ReplyToMessageID = callback.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Регистрация завершена. Спасибо!")
+		msg.ReplyToMessageID = callback.Message.MessageID
+		l.bot.Send(msg)
+		return
+	} else {
+		log.Println("Unknown callback data: ", callback.Data)
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Извини, я не понимаю эту команду.")
+		msg.ReplyToMessageID = callback.Message.MessageID
+		l.bot.Send(msg)
+		return
 	}
 }
 
@@ -203,7 +232,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		return
 	}
 
-	if user.State == "RegisterBirthdate" {
+	if user.State["Register"] == "Birthdate" {
 		birthdate, err := time.Parse("02.01.2006", update.Message.Text)
 		if err != nil {
 			log.Println("Error parsing birthdate: ", err)
@@ -213,7 +242,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			return
 		}
 		user.Birthdate = birthdate.Format("2006-01-02") //models.CustomDateTime{Time: birthdate}
-		user.State = ""
+		user.State["Register"] = ""
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user birthdate: ", err)
@@ -241,7 +270,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			msg.ReplyToMessageID = update.Message.MessageID
 			l.bot.Send(msg)
 		}
-	} else if user.State == "RegisterEmail" {
+	} else if user.State["Register"] == "Email" {
 		_, err := mail.ParseAddress(update.Message.Text)
 		if err != nil {
 			log.Println("Error parsing email: ", err)
@@ -251,7 +280,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			return
 		}
 		user.Email = update.Message.Text
-		user.State = ""
+		user.State["Register"] = ""
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user email: ", err)
@@ -279,9 +308,9 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			msg.ReplyToMessageID = update.Message.MessageID
 			l.bot.Send(msg)
 		}
-	} else if user.State == "RegisterFullName" {
+	} else if user.State["Register"] == "FullName" {
 		user.FullName = update.Message.Text
-		user.State = ""
+		user.State["Register"] = ""
 		_, err = l.storage.UpdateUser(*user)
 		if err != nil {
 			log.Println("Error updating user full name: ", err)
@@ -309,7 +338,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			msg.ReplyToMessageID = update.Message.MessageID
 			l.bot.Send(msg)
 		}
-	} else if user.State == "" {
+	} else {
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Извини, я ещё не знаю, что тебе отвечать.")
 		msg.ReplyToMessageID = update.Message.MessageID
 		l.bot.Send(msg)
@@ -317,11 +346,16 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 	}
 }
 
+/*func MakeFunctionsMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageConfig {
+
+}*/
+
 func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageConfig {
 	buttons := map[string]tgbotapi.InlineKeyboardButton{
 		"Birthdate": tgbotapi.NewInlineKeyboardButtonData("Ввести дату рождения", "State=RegisterBirthdate"),
 		"Email":     tgbotapi.NewInlineKeyboardButtonData("Ввести Email", "State=RegisterEmail"),
 		"FullName":  tgbotapi.NewInlineKeyboardButtonData("Ввести полное имя", "State=RegisterFullName"),
+		"Finished":  tgbotapi.NewInlineKeyboardButtonData("Завершить регистрацию", "State=RegisterFinished"),
 	}
 
 	RegisterMarkup := tgbotapi.NewInlineKeyboardMarkup()
@@ -340,15 +374,20 @@ func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageCo
 
 	Keyboard := tgbotapi.NewInlineKeyboardRow()
 
-	if user.FullName != "" && user.Birthdate != "" && user.FullName != "" {
+	if user.FullName != "" && user.Birthdate != "" && user.FullName != "" && user.State["Register"] != "Finished" {
 		Keyboard = append(Keyboard, buttons["Birthdate"])
 		Keyboard = append(Keyboard, buttons["Email"])
 		Keyboard = append(Keyboard, buttons["FullName"])
+		Keyboard = append(Keyboard, buttons["Finished"])
 		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Keyboard)
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData+"\nМожешь изменить свою анкету.\n")
 		msg.ParseMode = tgbotapi.ModeHTML
 		msg.ReplyMarkup = RegisterMarkup
+		msg.ReplyToMessageID = update.Message.MessageID
+		return msg
+	} else if user.State["Register"] == "Finished" {
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData)
 		msg.ReplyToMessageID = update.Message.MessageID
 		return msg
 	} else {

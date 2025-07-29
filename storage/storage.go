@@ -11,15 +11,15 @@ import (
 )
 
 type User struct {
-	ID           models.RecordID `json:"id,omitempty"`
-	State        string          `json:"State"`
-	UserName     string          `json:"UserName"`
-	Name         string          `json:"Name"`
-	Surname      string          `json:"Surname"`
-	FullName     string          `json:"FullName"`
-	LanguageCode string          `json:"LanguageCode"`
-	Email        string          `json:"Email"`
-	Birthdate    string          `json:"Birthdate"`
+	ID           models.RecordID        `json:"id,omitempty"`
+	State        map[string]interface{} `json:"State"`
+	UserName     string                 `json:"UserName"`
+	Name         string                 `json:"Name"`
+	Surname      string                 `json:"Surname"`
+	FullName     string                 `json:"FullName"`
+	LanguageCode string                 `json:"LanguageCode"`
+	Email        string                 `json:"Email"`
+	Birthdate    string                 `json:"Birthdate"`
 }
 
 type DBConfig struct {
