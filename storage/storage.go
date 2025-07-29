@@ -37,6 +37,53 @@ type Storage struct {
 	reauth   sync.RWMutex
 }
 
+func (s *Storage) GetUserByID(id string) (user *User, exist bool, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, false, err
+	}
+	user, err = surrealdb.Select[User](s.ctx, s.db, models.RecordID{Table: "Users", ID: id})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if user == nil || user.ID == (models.RecordID{}) {
+		return nil, false, nil
+	}
+
+	return user, true, nil
+}
+
+func (s *Storage) UpdateUser(NewUser User) (updatedUser *User, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, err
+	}
+	updatedUser = &User{}
+	updatedUser, err = surrealdb.Update[User](s.ctx, s.db, models.RecordID{Table: "Users", ID: NewUser.ID.ID.(string)}, NewUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedUser, nil
+}
+
+func (s *Storage) RegisterNewUser(user User) (userInDb *User, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, err
+	}
+	userInDb = &User{}
+
+	userInDb, err = surrealdb.Create[User](s.ctx, s.db, models.Table("Users"), user)
+	if err != nil {
+		return userInDb, err
+	}
+
+	return userInDb, nil
+}
+
+
 func (s *Storage) ConnectToSurreal() (err error) {
 	s.reauth.Lock()
 	s.ctx = context.Background()
@@ -123,48 +170,3 @@ func (s *Storage) CheckToken() error {
 	}
 }
 
-func (s *Storage) GetUserByID(id string) (user *User, exist bool, err error) {
-	err = s.CheckToken()
-	if err != nil {
-		return nil, false, err
-	}
-	user, err = surrealdb.Select[User](s.ctx, s.db, models.RecordID{Table: "Users", ID: id})
-	if err != nil {
-		return nil, false, err
-	}
-
-	if user == nil || user.ID == (models.RecordID{}) {
-		return nil, false, nil
-	}
-
-	return user, true, nil
-}
-
-func (s *Storage) UpdateUser(NewUser User) (updatedUser *User, err error) {
-	err = s.CheckToken()
-	if err != nil {
-		return nil, err
-	}
-	updatedUser = &User{}
-	updatedUser, err = surrealdb.Update[User](s.ctx, s.db, models.RecordID{Table: "Users", ID: NewUser.ID.ID.(string)}, NewUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedUser, nil
-}
-
-func (s *Storage) RegisterNewUser(user User) (userInDb *User, err error) {
-	err = s.CheckToken()
-	if err != nil {
-		return nil, err
-	}
-	userInDb = &User{}
-
-	userInDb, err = surrealdb.Create[User](s.ctx, s.db, models.Table("Users"), user)
-	if err != nil {
-		return userInDb, err
-	}
-
-	return userInDb, nil
-}
