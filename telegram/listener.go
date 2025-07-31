@@ -410,7 +410,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
 			karmaNumber, err := digits.GetKarmaNumber(user.Birthdate)
 			if err != nil {
-				log.Println("Error calculating action number: ", err)
+				log.Println("Error calculating karma number: ", err)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего числа кармы. Попробуй позже.")
 				msg.ReplyToMessageID = update.Message.MessageID
 				l.bot.Send(msg)
@@ -430,13 +430,73 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
 			monthNumber, err := digits.GetMonthNumber(user.Birthdate)
 			if err != nil {
-				log.Println("Error calculating action number: ", err)
+				log.Println("Error calculating month number: ", err)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего месяца. Попробуй позже.")
 				msg.ReplyToMessageID = update.Message.MessageID
 				l.bot.Send(msg)
 				return
 			}
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твоё число месяца: %d", monthNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		} else {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Похоже, что ты ещё не завершил регистрацию. Напиши /start, чтобы начать.")
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+	} else if update.Message.Text == "Число года" {
+		if user.Birthdate != "" && user.State["Register"] == "Finished" {
+			monthNumber, err := digits.GetYearNumber(user.Birthdate)
+			if err != nil {
+				log.Println("Error calculating month number: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего года. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твоё число года: %d", monthNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		} else {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Похоже, что ты ещё не завершил регистрацию. Напиши /start, чтобы начать.")
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+	}else if update.Message.Text == "Личный день" {
+		if user.Birthdate != "" && user.State["Register"] == "Finished" {
+			monthNumber, err := digits.GetPrivateDay()
+			if err != nil {
+				log.Println("Error calculating private day number: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего личного дня. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Число личного дня: %d", monthNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		} else {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Похоже, что ты ещё не завершил регистрацию. Напиши /start, чтобы начать.")
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+	}else if update.Message.Text == "Общий день" {
+		if user.Birthdate != "" && user.State["Register"] == "Finished" {
+			monthNumber, err := digits.GetPublicDay(user.Birthdate)
+			if err != nil {
+				log.Println("Error calculating shared day: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте общего дня. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Число общего дня: %d", monthNumber))
 			msg.ReplyToMessageID = update.Message.MessageID
 			l.bot.Send(msg)
 			return

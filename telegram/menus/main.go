@@ -8,14 +8,14 @@ import (
 
 func MakeMainMenu(user storage.User, MessageID int, chatId int64, message string) tgbotapi.MessageConfig {
 	buttons := map[string]tgbotapi.KeyboardButton{
-		"Start":         tgbotapi.NewKeyboardButton("/start"),
-		"Consciousness": tgbotapi.NewKeyboardButton("Число сознания"),
-		"Action":        tgbotapi.NewKeyboardButton("Число действия"),
-		"Karma":         tgbotapi.NewKeyboardButton("Число кармы"),
-		"Year":          tgbotapi.NewKeyboardButton("Число года"),
-		"Month":         tgbotapi.NewKeyboardButton("Число месяца"),
-		"PrivateDay":    tgbotapi.NewKeyboardButton("Личный день"),
-		"SharedDay":     tgbotapi.NewKeyboardButton("Общий день"),
+		"Start":         tgbotapi.NewKeyboardButton("/start"), //ok
+		"Consciousness": tgbotapi.NewKeyboardButton("Число сознания"), //ok
+		"Action":        tgbotapi.NewKeyboardButton("Число действия"), //ok
+		"Karma":         tgbotapi.NewKeyboardButton("Число кармы"), //ok
+		"Year":          tgbotapi.NewKeyboardButton("Число года"), //ok
+		"Month":         tgbotapi.NewKeyboardButton("Число месяца"), //ok
+		"PrivateDay":    tgbotapi.NewKeyboardButton("Личный день"), //ok
+		"SharedDay":     tgbotapi.NewKeyboardButton("Общий день"), //ok
 	}
 
 	RegisterMarkup := tgbotapi.NewReplyKeyboard(
