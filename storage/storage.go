@@ -83,9 +83,7 @@ func (s *Storage) RegisterNewUser(user User) (userInDb *User, err error) {
 	return userInDb, nil
 }
 
-
 func (s *Storage) ConnectToSurreal() (err error) {
-	s.reauth.Lock()
 	s.ctx = context.Background()
 	s.db, err = surrealdb.Connect(context.Background(), s.DBConfig.ConnectionURL)
 	if err != nil {
@@ -107,14 +105,11 @@ func (s *Storage) ConnectToSurreal() (err error) {
 	if err := s.db.Authenticate(s.ctx, token); err != nil {
 		return err
 	}
-	s.reauth.Unlock()
 
 	return nil
 }
 
 func (s *Storage) Close() error {
-	s.reauth.Lock()
-	defer s.reauth.Unlock()
 	if s.db != nil {
 		if err := s.db.Close(s.ctx); err != nil {
 			return err
@@ -124,49 +119,50 @@ func (s *Storage) Close() error {
 	return nil
 }
 
-func (s *Storage) GetTokenExpirationTime() (time.Time, error) {
+func (s *Storage) GetTokenExpirationTime() (exp time.Time, has bool, err error) {
 	type ExpResult struct {
 		Exp int64 `json:"exp"`
 	}
 
 	res, err := surrealdb.Query[[]ExpResult](s.ctx, s.db, "SELECT exp FROM $token;", nil)
 	if err != nil {
-		return time.Now(), err
+		return time.Now(), true, err
 	}
-	exp := (*res)[0].Result[0].Exp
-	if time.Unix(exp, 0).IsZero() {
-		return time.Now(), fmt.Errorf("token is not set or has no expiration time")
-	} /* else {
-		fmt.Println("Token expiration time:", time.Unix(exp, 0).UTC().String())
+	numexp := (*res)[0].Result[0].Exp
+	if time.Unix(numexp, 0).IsZero() {
+		return time.Now(), false, nil
+	}/* else {
+		fmt.Println("Token expiration time:", time.Unix(numexp, 0).UTC().String())
 	}*/
-	t := time.Unix(exp, 0).UTC()
+	exp = time.Unix(numexp, 0).UTC()
 
-	return t, nil
+	return exp, true, nil
 }
 
 func (s *Storage) CheckToken() error {
 	s.reauth.Lock()
-	exp, err := s.GetTokenExpirationTime()
+	defer s.reauth.Unlock()
+	exp, has, err := s.GetTokenExpirationTime()
 	if err != nil {
 		s.Close()
 		conerr := s.ConnectToSurreal()
 		if conerr != nil {
 			return fmt.Errorf("failed to reconnect to SurrealDB: %w", conerr)
 		} else {
-			s.reauth.Unlock()
 			return nil
 		}
+	}
+	if !has {
+		return nil
 	}
 	if time.Now().After(exp) {
 		err = s.ConnectToSurreal()
 		if err != nil {
 			return fmt.Errorf("failed to reauthenticate: %w", err)
 		}
-		s.reauth.Unlock()
+		fmt.Println("Surealdb`s token updated.")
 		return nil
 	} else {
-		s.reauth.Unlock()
 		return nil
 	}
 }
-
