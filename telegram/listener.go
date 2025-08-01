@@ -375,9 +375,30 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 				l.bot.Send(msg)
 				return
 			}
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твоё число сознания: %d", consciousnessNumber))
+			//fmt.Println("Consciousness number: ", consciousnessNumber)
+
+			cons, exist, err := l.storage.GetConscienceText(consciousnessNumber)
+			if err != nil {
+				log.Println("Error getting consciousness from storage: ", err)
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при получении рекомендаций. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			if !exist {
+				log.Println("Consciousness not found in storage")
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при поике рекомендаций. Попробуй позже.")
+				msg.ReplyToMessageID = update.Message.MessageID
+				l.bot.Send(msg)
+				return
+			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, cons.Message)
 			msg.ReplyToMessageID = update.Message.MessageID
+			msg.ParseMode = tgbotapi.ModeHTML
 			l.bot.Send(msg)
+			/*msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твоё число сознания: %d", consciousnessNumber))
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)*/
 			return
 		} else {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Похоже, что ты ещё не завершил регистрацию. Напиши /start, чтобы начать.")
@@ -466,7 +487,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			l.bot.Send(msg)
 			return
 		}
-	}else if update.Message.Text == "Личный день" {
+	} else if update.Message.Text == "Личный день" {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
 			monthNumber, err := digits.GetPrivateDay()
 			if err != nil {
@@ -486,7 +507,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			l.bot.Send(msg)
 			return
 		}
-	}else if update.Message.Text == "Общий день" {
+	} else if update.Message.Text == "Общий день" {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
 			monthNumber, err := digits.GetPublicDay(user.Birthdate)
 			if err != nil {

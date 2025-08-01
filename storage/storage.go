@@ -21,6 +21,10 @@ type User struct {
 	Email        string                 `json:"Email"`
 	Birthdate    string                 `json:"Birthdate"`
 }
+type Conscience struct {
+	ID      models.RecordID `json:"id,omitempty"`
+	Message string          `json:"Message"`
+}
 
 type DBConfig struct {
 	ConnectionURL string
@@ -83,6 +87,23 @@ func (s *Storage) RegisterNewUser(user User) (userInDb *User, err error) {
 	return userInDb, nil
 }
 
+func (s *Storage) GetConscienceText(id int) (conscience *Conscience, exist bool, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, false, err
+	}
+	conscience, err = surrealdb.Select[Conscience](s.ctx, s.db, models.RecordID{Table: "Conscience", ID: id})
+	if err != nil {
+		return nil, false, err
+	}
+
+	if conscience == nil || conscience.ID == (models.RecordID{}) {
+		return nil, false, nil
+	}
+
+	return conscience, true, nil
+}
+
 func (s *Storage) ConnectToSurreal() (err error) {
 	s.ctx = context.Background()
 	s.db, err = surrealdb.Connect(context.Background(), s.DBConfig.ConnectionURL)
@@ -131,7 +152,7 @@ func (s *Storage) GetTokenExpirationTime() (exp time.Time, has bool, err error) 
 	numexp := (*res)[0].Result[0].Exp
 	if time.Unix(numexp, 0).IsZero() {
 		return time.Now(), false, nil
-	}/* else {
+	} /* else {
 		fmt.Println("Token expiration time:", time.Unix(numexp, 0).UTC().String())
 	}*/
 	exp = time.Unix(numexp, 0).UTC()
