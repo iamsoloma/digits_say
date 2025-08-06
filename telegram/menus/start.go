@@ -10,10 +10,11 @@ import (
 
 func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageConfig {
 	buttons := map[string]tgbotapi.InlineKeyboardButton{
-		"Birthdate": tgbotapi.NewInlineKeyboardButtonData("Ввести дату рождения", "State=RegisterBirthdate"),
-		"Email":     tgbotapi.NewInlineKeyboardButtonData("Ввести Email", "State=RegisterEmail"),
-		"FullName":  tgbotapi.NewInlineKeyboardButtonData("Ввести полное имя", "State=RegisterFullName"),
-		"Finished":  tgbotapi.NewInlineKeyboardButtonData("Завершить регистрацию", "State=RegisterFinished"),
+		"Birthdate":        tgbotapi.NewInlineKeyboardButtonData("Ввести дату рождения", "State=RegisterBirthdate"),
+		"Email":            tgbotapi.NewInlineKeyboardButtonData("Ввести Email", "State=RegisterEmail"),
+		"FullName":         tgbotapi.NewInlineKeyboardButtonData("Ввести полное имя", "State=RegisterFullName"),
+		"Finished":         tgbotapi.NewInlineKeyboardButtonData("Завершить регистрацию", "State=RegisterFinished"),
+		"BalanceGetAmount": tgbotapi.NewInlineKeyboardButtonData("Пополнить баланс", "State=BalanceRequestAmount"),
 	}
 
 	RegisterMarkup := tgbotapi.NewInlineKeyboardMarkup()
@@ -26,8 +27,8 @@ func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageCo
 	}
 
 	CurrentData := fmt.Sprintf(
-		"Полное имя: %s\nEmail: %s\nДата рождения: %s",
-		user.FullName, user.Email, birth,
+		"Полное имя: %s\nEmail: %s\nДата рождения: %s\nБаланс: %d",
+		user.FullName, user.Email, birth, user.Balance,
 	)
 
 	Row1 := tgbotapi.NewInlineKeyboardRow()
@@ -47,8 +48,13 @@ func MakeStartMenu(user storage.User, update tgbotapi.Update) tgbotapi.MessageCo
 		msg.ReplyToMessageID = update.Message.MessageID
 		return msg
 	} else if user.State["Register"] == "Finished" {
+		Row1 = append(Row1, buttons["BalanceGetAmount"])
+		RegisterMarkup = tgbotapi.NewInlineKeyboardMarkup(Row1)
+
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Привет "+user.Name+", вот что мне сейчас изветно о тебе.\n"+CurrentData)
 		msg.ReplyToMessageID = update.Message.MessageID
+		msg.ParseMode = tgbotapi.ModeHTML
+		msg.ReplyMarkup = RegisterMarkup
 		return msg
 	} else {
 		if user.Birthdate == "" {

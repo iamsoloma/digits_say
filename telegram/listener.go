@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/mail"
+	"strconv"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -67,6 +68,16 @@ func (l *TelegramListener) Start() {
 				l.HandleCommad(update)
 			} else if update.Message.Text != "" {
 				l.HandleText(update)
+			} else if update.PreCheckoutQuery != nil {
+				
+			} else if update.Message.SuccessfulPayment != nil {
+				payment := update.Message.SuccessfulPayment
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Спасибо за пополнение баланса! Твой баланс успешно обновлён + ."+strconv.Itoa(payment.TotalAmount))
+				msg.ReplyToMessageID = update.Message.MessageID
+				return
+			} else {
+				log.Println("Received message without text or command: ", update.Message)
+				return
 			}
 		}
 		if update.CallbackQuery != nil {
@@ -162,7 +173,7 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 			return
 		}
 
-		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи свою дату рождения в формате ДД.ММ.ГГГГ:")
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи свою дату рождения в формате ДД.ММ.ГГГГ")
 		msg.ReplyToMessageID = callback.Message.MessageID
 		l.bot.Send(msg)
 	} else if callback.Data == "State=RegisterEmail" {
@@ -229,6 +240,29 @@ func (l *TelegramListener) HandleCallbacks(callback *tgbotapi.CallbackQuery) {
 		_, err = l.bot.Send(msg)
 		fmt.Println(err)
 		return
+	} else if callback.Data == "State=BalanceRequestAmount" {
+		user, _, err := l.storage.GetUserByID(fmt.Sprintf("tg%d", callback.From.ID))
+		if err != nil {
+			log.Println("Error getting user by Telegram ID: ", err)
+			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при получении пользователя. Попробуй позже.")
+			msg.ReplyToMessageID = callback.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+		user.State["Balance"] = "RequestAmount"
+		_, err = l.storage.UpdateUser(*user)
+		if err != nil {
+			log.Println("Error updating user state: ", err)
+			msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.")
+			msg.ReplyToMessageID = callback.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Введи на какую сумму(в звёздочках) хочешь пополнить баланс:")
+		msg.ReplyToMessageID = callback.Message.MessageID
+		l.bot.Send(msg)
+		return
+
 	} else {
 		log.Println("Unknown callback data: ", callback.Data)
 		msg := tgbotapi.NewMessage(callback.Message.Chat.ID, "Извини, я не понимаю эту команду.")
@@ -259,7 +293,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		birthdate, err := time.Parse("02.01.2006", update.Message.Text)
 		if err != nil {
 			log.Println("Error parsing birthdate: ", err)
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неверный формат даты. Пожалуйста, введи дату в формате ДД.ММ.ГГГГ.")
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неверный формат даты. Пожалуйста, введи дату в формате ДД.ММ.ГГГГ")
 			msg.ReplyToMessageID = update.Message.MessageID
 			l.bot.Send(msg)
 			return
@@ -365,6 +399,37 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 
 		}*/
 		return
+	} else if user.State["Balance"] == "RequestAmount" {
+		request, err := strconv.Atoi(update.Message.Text)
+		if err != nil {
+			log.Println("Error parcing Invoice request: ", err)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неверный формат введи целое число.")
+			msg.ReplyToMessageID = update.Message.MessageID
+			l.bot.Send(msg)
+			return
+		}
+		msg := tgbotapi.NewInvoice(
+			update.Message.From.ID,
+			"Пополнение баланса на Digits Say",
+			"Бот с жизнеными рекомендациями.",
+			"Payload",
+			"",
+			"",
+			"XTR",
+			[]tgbotapi.LabeledPrice{
+				{
+					Label:  "Пополнение баланса на Digits Say",
+					Amount: request,
+				},
+			},
+		)
+		msg.SuggestedTipAmounts = []int{1, 10, 25, 100}
+		msg.MaxTipAmount = 500
+		_, err = l.bot.Send(msg)
+		if err != nil {
+			fmt.Printf("%#v\n", msg)
+			log.Println(err)
+		}
 	} else if update.Message.Text == "Число сознания" {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
 			consciousnessNumber, err := digits.GetConsciousnessNumber(user.Birthdate)
@@ -375,7 +440,6 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 				l.bot.Send(msg)
 				return
 			}
-			//fmt.Println("Consciousness number: ", consciousnessNumber)
 
 			cons, exist, err := l.storage.GetConscienceText(consciousnessNumber)
 			if err != nil {
@@ -396,9 +460,6 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 			msg.ReplyToMessageID = update.Message.MessageID
 			msg.ParseMode = tgbotapi.ModeHTML
 			l.bot.Send(msg)
-			/*msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("Твоё число сознания: %d", consciousnessNumber))
-			msg.ReplyToMessageID = update.Message.MessageID
-			l.bot.Send(msg)*/
 			return
 		} else {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Похоже, что ты ещё не завершил регистрацию. Напиши /start, чтобы начать.")

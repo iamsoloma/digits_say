@@ -20,6 +20,7 @@ type User struct {
 	LanguageCode string                 `json:"LanguageCode"`
 	Email        string                 `json:"Email"`
 	Birthdate    string                 `json:"Birthdate"`
+	Balance      int                    `json:"Balance"`
 }
 type Conscience struct {
 	ID      models.RecordID `json:"id,omitempty"`
