@@ -16,6 +16,8 @@ import {Bot} from "grammy";
 
 const bot = new Bot(process.env.TGAPIToken)
 
-bot.command("start", ctx => ctx.reply("HEllo!"))
+bot.command("start", async (ctx) => {
+    ctx.reply("HEllo!")
+})
 
 bot.start()

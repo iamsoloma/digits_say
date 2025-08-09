@@ -1,0 +1,21 @@
+{
+  "details": {
+    "path": "/user",
+    "method": "GET",
+    "queryParams": [
+      {
+        "key": "id",
+        "value": "tg17400"
+      }
+    ],
+    "pathParams": []
+  },
+  "requests": [
+    {
+      "contentType": "none"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "rest",
+  "typeHint": "GET"
+}

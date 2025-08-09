@@ -39,7 +39,13 @@ func NewServer(config Config) (*Server, error) {
 func (s *Server) Start() {
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("GET /user/", s.GetUserByID)
+	mux.HandleFunc("POST /user", s.RegisterNewUser)
+	mux.HandleFunc("UPDATE /user", s.UpdateUser)
+	mux.HandleFunc("GET /conscience", s.GetConscienceText)
+
 	mux.HandleFunc("GET /health", s.Health)
+	
 	server := http.Server{
 		Addr: s.Config.ListenAddr,
 		Handler: mux,
