@@ -164,7 +164,7 @@ func GetYearNumber(birthdate string) (int, error) {
 	return resp, nil
 }
 
-func GetPrivateDay() (int, error) {
+func GetCommonDay() (int, error) {
 	strtime := time.Now().String()
 	resp, err := strconv.Atoi(string(strtime[9]))
 	if err != nil {
@@ -174,7 +174,7 @@ func GetPrivateDay() (int, error) {
 	return resp, nil
 }
 
-func GetPublicDay(birthdate string) (int, error) {
+func GetPrivateDay(birthdate string) (int, error) {
 	strtime := time.Now().String()
 	d1, err := strconv.Atoi(string(strtime[8]))
 	if err != nil {

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"digits_say/digits"
 	"fmt"
 	"sync"
 	"time"
@@ -17,12 +18,18 @@ type User struct {
 	Name         string                 `json:"Name"`
 	Surname      string                 `json:"Surname"`
 	FullName     string                 `json:"FullName"`
+	Subscriber   bool                   `json:"Subscriber"`
 	LanguageCode string                 `json:"LanguageCode"`
 	Email        string                 `json:"Email"`
 	Birthdate    string                 `json:"Birthdate"`
 	Balance      int                    `json:"Balance"`
 }
 type Conscience struct {
+	ID      models.RecordID `json:"id,omitempty"`
+	Message string          `json:"Message"`
+}
+
+type CommonDay struct {
 	ID      models.RecordID `json:"id,omitempty"`
 	Message string          `json:"Message"`
 }
@@ -88,6 +95,21 @@ func (s *Storage) RegisterNewUser(user User) (userInDb *User, err error) {
 	return userInDb, nil
 }
 
+func (s *Storage) GetListOfSubscribers() (users []User, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, err
+	}
+
+	users = []User{}
+	res, err := surrealdb.Query[[]User](s.ctx, s.db, "SELECT * from Users where Subscriber=true;", nil)
+	if err != nil {
+		return nil, err
+	}
+	users = (*res)[0].Result
+	return users, nil
+}
+
 func (s *Storage) GetConscienceText(id int) (conscience *Conscience, exist bool, err error) {
 	err = s.CheckToken()
 	if err != nil {
@@ -103,6 +125,29 @@ func (s *Storage) GetConscienceText(id int) (conscience *Conscience, exist bool,
 	}
 
 	return conscience, true, nil
+}
+
+func (s *Storage) GetCommonDayText() (common *CommonDay, exist bool, err error) {
+	err = s.CheckToken()
+	if err != nil {
+		return nil, false, err
+	}
+
+	id, err := digits.GetCommonDay()
+	if err!=nil{
+		return nil, false, err
+	}
+
+	common, err = surrealdb.Select[CommonDay](s.ctx, s.db, models.RecordID{Table: "CommonDay", ID: id})
+	if err!=nil{
+		return nil, false, nil
+	}
+
+	if common == nil || common.ID == (models.RecordID{}) {
+		return nil, false, nil
+	}
+
+	return common, true, nil
 }
 
 func (s *Storage) ConnectToSurreal() (err error) {

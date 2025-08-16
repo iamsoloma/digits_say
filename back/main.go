@@ -1,6 +1,45 @@
 package main
 
 import (
+	"digits_say/api"
+	"log"
+	"log/slog"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	config := Init()
+
+	server, err := api.NewServer(*config)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	server.Start()
+}
+
+func Init() *api.Config {
+	config := api.Config{}
+
+	err := godotenv.Load()
+	if err != nil {
+		slog.Error(".env file error: " + err.Error())
+	}
+	config.ListenAddr = os.Getenv("ListenAddr")
+
+	config.DB.ConnectionURL = os.Getenv("SurrealConnectionURL")
+	println(os.Getenv("SurrealConnectionURL"))
+	config.DB.Username = os.Getenv("SurrealUser")
+	config.DB.Password = os.Getenv("SurrealPassword")
+	config.DB.Namespace = os.Getenv("SurrealNamespace")
+	config.DB.Database = os.Getenv("SurrealDatabase")
+
+	return &config
+}
+
+/*import (
 	"digits_say/storage"
 	"digits_say/telegram"
 	"log"
@@ -55,3 +94,4 @@ func Init() *telegram.Config {
 
 	return &config
 }
+*/

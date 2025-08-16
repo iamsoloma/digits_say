@@ -1,0 +1,22 @@
+{
+  "details": {
+    "path": "/user",
+    "method": "UPDATE",
+    "headers": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "pathParams": []
+  },
+  "requests": [
+    {
+      "location": "update user-request.json",
+      "contentType": "json"
+    }
+  ],
+  "operationType": "unary",
+  "invokerName": "rest",
+  "typeHint": "UPDATE"
+}

@@ -69,7 +69,7 @@ func (l *TelegramListener) Start() {
 			} else if update.Message.Text != "" {
 				l.HandleText(update)
 			} else if update.PreCheckoutQuery != nil {
-				
+
 			} else if update.Message.SuccessfulPayment != nil {
 				payment := update.Message.SuccessfulPayment
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Спасибо за пополнение баланса! Твой баланс успешно обновлён + ."+strconv.Itoa(payment.TotalAmount))
@@ -550,7 +550,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		}
 	} else if update.Message.Text == "Личный день" {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
-			monthNumber, err := digits.GetPrivateDay()
+			monthNumber, err := digits.GetCommonDay()
 			if err != nil {
 				log.Println("Error calculating private day number: ", err)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте твоего личного дня. Попробуй позже.")
@@ -570,7 +570,7 @@ func (l *TelegramListener) HandleText(update tgbotapi.Update) {
 		}
 	} else if update.Message.Text == "Общий день" {
 		if user.Birthdate != "" && user.State["Register"] == "Finished" {
-			monthNumber, err := digits.GetPublicDay(user.Birthdate)
+			monthNumber, err := digits.GetPrivateDay(user.Birthdate)
 			if err != nil {
 				log.Println("Error calculating shared day: ", err)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Произошла ошибка при расчёте общего дня. Попробуй позже.")

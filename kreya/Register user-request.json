@@ -1,0 +1,15 @@
+{
+  "Balance": 0,
+  "Birthdate": "2007-04-13",
+  "Email": "SampleUser@example.cpm",
+  "FullName": "Egor",
+  "LanguageCode": "ru",
+  "Name": "Егор",
+  "State": {},
+  "Surname": "ХЗков",
+  "UserName": "example",
+  "id": {
+    "Table": "Users",
+    "ID": "tg17400"
+  }
+}
