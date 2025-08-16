@@ -34,6 +34,26 @@ func (s *Server) GetConscienceText(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) GetCommonDayText(w http.ResponseWriter, r *http.Request) {
+	common, exist, err := s.Storage.GetCommonDayText()
+	if err != nil {
+		http.Error(w, "Error getting common day: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !exist {
+		w.WriteHeader(http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("Not Found"))
+		return
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(common.Message))
+		return
+	}
+}
+
 func (s *Server) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -62,6 +82,25 @@ func (s *Server) GetUserByID(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp)
 			return
 		}
+	}
+}
+
+func (s *Server) GetListOfSubscribers(w http.ResponseWriter, r *http.Request) {
+	users, err := s.Storage.GetListOfSubscribers()
+	if err != nil {
+		http.Error(w, "Error of users listing: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := json.Marshal(users)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(resp)
+		return
 	}
 }
 

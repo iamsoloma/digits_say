@@ -1,13 +1,7 @@
 {
   "details": {
-    "path": "/user",
+    "path": "/commonday",
     "method": "GET",
-    "queryParams": [
-      {
-        "key": "id",
-        "value": "tg1"
-      }
-    ],
     "pathParams": []
   },
   "requests": [

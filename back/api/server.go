@@ -42,7 +42,10 @@ func (s *Server) Start() {
 	mux.HandleFunc("GET /user/", s.GetUserByID)
 	mux.HandleFunc("POST /user", s.RegisterNewUser)
 	mux.HandleFunc("UPDATE /user", s.UpdateUser)
+	mux.HandleFunc("PATCH /user", s.UpdateUser)
 	mux.HandleFunc("GET /conscience", s.GetConscienceText)
+	mux.HandleFunc("GET /subscribers", s.GetListOfSubscribers)
+	mux.HandleFunc("GET /commonday", s.GetCommonDayText)
 
 	mux.HandleFunc("GET /health", s.Health)
 	

@@ -30,6 +30,7 @@ func Init() *api.Config {
 	config.ListenAddr = os.Getenv("ListenAddr")
 
 	config.DB.ConnectionURL = os.Getenv("SurrealConnectionURL")
+	println(os.Getenv("SurrealConnectionURL"))
 	config.DB.Username = os.Getenv("SurrealUser")
 	config.DB.Password = os.Getenv("SurrealPassword")
 	config.DB.Namespace = os.Getenv("SurrealNamespace")

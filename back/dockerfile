@@ -14,5 +14,7 @@ WORKDIR /workspace
 #Copy
 COPY --from=builder /build/bin/digits_say ./digits_say
 
+EXPOSE 2001
+
 #Start
 CMD ["./digits_say"]

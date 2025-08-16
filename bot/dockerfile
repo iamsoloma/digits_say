@@ -1,0 +1,8 @@
+FROM oven/bun:1 AS base
+
+WORKDIR /workspace
+
+COPY . .
+RUN bun install
+
+CMD ["bun", "index.ts"]
