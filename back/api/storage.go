@@ -1,23 +1,21 @@
 package api
 
 import (
+	"digits_say/digits"
 	"digits_say/storage"
 	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
 func (s *Server) GetConscienceText(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	iid, err := strconv.Atoi(id)
-	if id == "" || err != nil {
-		http.Error(w, "Empty or not correct id", http.StatusBadRequest)
+	if id == "" {
+		http.Error(w, "Empty id", http.StatusBadRequest)
 		return
 	}
-
-	conscience, exist, err := s.Storage.GetConscienceText(iid)
+	user, exist, err := s.Storage.GetUserByID(id)
 	if err != nil {
-		http.Error(w, "Error getting conscience: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error getting user by Telegram ID: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -27,11 +25,30 @@ func (s *Server) GetConscienceText(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Not Found"))
 		return
 	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(conscience.Message))
-		return
+		textID, err := digits.GetConsciousnessNumber(user.Birthdate)
+		if err != nil {
+			http.Error(w, "Error calculatin a conscience number: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		conscience, exist, err := s.Storage.GetConscienceText(textID)
+		if err != nil {
+			http.Error(w, "Error getting conscience: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if !exist {
+			w.WriteHeader(http.StatusNotFound)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte("Not Found"))
+			return
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(conscience.Message))
+			return
+		}
 	}
+
 }
 
 func (s *Server) GetCommonDayText(w http.ResponseWriter, r *http.Request) {

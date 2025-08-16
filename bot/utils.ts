@@ -1,3 +1,8 @@
+export type Result<T, E> =
+  | { result: "success"; value: T }
+  | { result: "error"; error: E };
+
+
 export function delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -23,7 +28,7 @@ export function parseDate(input: string): Date | null {
   return new Date(year, month, day);
 }
 
-export function formatDate(date: Date): string {
+export function formatDateToSurreal(date: Date): string {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0'); // месяцы с 0
   const day = date.getDate().toString().padStart(2, '0');

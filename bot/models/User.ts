@@ -1,6 +1,4 @@
-export type Result<T, E> =
-  | { result: "success"; value: T }
-  | { result: "error"; error: E };
+import type { Result } from "../utils";
 
 export type User = {
   id: { Table: string; ID: string };
@@ -74,21 +72,6 @@ export async function UpdateUser(user: User): Promise<Result<string, string>> {
       result: "success",
       value: "Ok",
     };
-  }
-}
-
-export async function GetCommonDayText(): Promise<
-  Result<{ text: string }, string>
-> {
-  const response = await fetch(`${process.env.APIEndpoint}/commonday`);
-  if (!response.ok) {
-    return {
-      result: "error",
-      error: `API response not ok: ${response.statusText}}`,
-    };
-  } else {
-    const result = await response.body?.text()!;
-    return { result: "success", value: { text: result } };
   }
 }
 

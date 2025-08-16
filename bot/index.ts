@@ -1,7 +1,6 @@
 import { Bot, GrammyError, HttpError, InlineKeyboard } from "grammy";
 import { Cron } from "croner";
 import {
-  GetCommonDayText,
   GetListOfSubscribers,
   GetUserByID,
   RegisterNewUser,
@@ -9,7 +8,8 @@ import {
   type User,
 } from "./models/User";
 import { backToStartKeyboard, MakeStartMenu } from "./menus/start";
-import { delay, formatDate, parseDate } from "./utils";
+import { delay, formatDateToSurreal, parseDate } from "./utils";
+import { GetCommonDayText, GetConscienceText } from "./models/Recomendations";
 require("dotenv").config();
 
 if (process.env.BOT_API_TOKEN === undefined) {
@@ -24,6 +24,7 @@ const bot = new Bot(process.env.BOT_API_TOKEN!);
 bot.api.setMyCommands([
   { command: "start", description: "Запуск" },
   //{ command: "menu", description: "Получить меню" },
+  { command: "conscience", description: "Получить рекомендацию на основе числа сознания" },
 ]);
 
 bot.command("start", async (ctx) => {
@@ -75,6 +76,39 @@ bot.command("start", async (ctx) => {
   /*await ctx.reply("Привет!", {
     reply_parameters: {message_id: ctx.msg.message_id}
   });*/
+});
+
+bot.command("conscience", async (ctx) => {
+  const userResp = await GetUserByID(String("tg" + ctx.message?.from.id));
+  if (userResp.result === "error" && userResp.error !== "404") {
+    console.log("Error getting user by Telegram ID: " + userResp.error);
+    ctx.reply("Произошла ошибка при получении пользователя. Попробуй позже.", {
+      reply_parameters: { message_id: ctx.message?.message_id! },
+    });
+  } else if (userResp.result === "error" && userResp.error === "404") {
+    ctx.reply(
+      "Похоже, что ты ещё не зарегистрирован. Напиши /start, чтобы начать.",
+      { reply_parameters: { message_id: ctx.message?.message_id! } }
+    );
+  } else if (userResp.result === "success") {
+    const resp = await GetConscienceText(userResp.value.user.id.ID);
+    if (resp.result === "error" && resp.error !== "404") {
+      console.log("Error getting consciousness from storage: " + resp.error);
+      ctx.reply(
+        "Произошла ошибка при получении рекомендаций. Попробуй позже.",
+        { reply_parameters: { message_id: ctx.message?.message_id! } }
+      );
+    } else if (resp.result === "error" && resp.error === "404") {
+      console.log("Consciousness not found in storage ");
+      ctx.reply("Произошла ошибка при поиске рекомендаций. Попробуй позже.", {
+        reply_parameters: { message_id: ctx.message?.message_id! },
+      });
+    } else if (resp.result === "success") {
+      ctx.reply(resp.value.text, {
+        reply_parameters: { message_id: ctx.message?.message_id! },
+      });
+    }
+  }
 });
 
 bot.callbackQuery(
@@ -183,26 +217,34 @@ bot.on("message", async (ctx) => {
     );
   } else if (userResp.result === "success") {
     if (userResp.value.user.State["Register"] === "FullName") {
-      userResp.value.user.FullName = ctx.message.text!;
-      userResp.value.user.State["Register"] = "";
-      const updateResp = await UpdateUser(userResp.value.user);
-      if (updateResp.result === "error") {
-        console.log("Error updating user state: " + updateResp.error);
+      if (!/^[a-zA-Z]+$/.test(ctx.message.text!)) {
+        console.log("Error parsing FullName in " + ctx.message.text!);
         ctx.reply(
-          "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
-          {
-            reply_parameters: {
-              message_id: ctx.message.message_id,
-            },
-          }
+          "Неверный формат имени. Пожалуйста, введи ТОЛЬКО латинским буквами",
+          { reply_parameters: { message_id: ctx.message.message_id! } }
         );
       } else {
-        const msg = await ctx.reply("Твоё полное имя успешно сохранено.", {
-          reply_parameters: { message_id: ctx.message.message_id },
-        });
-        await delay(2500); //2.5 in seconds
-        ctx.deleteMessage();
-        bot.api.deleteMessage(ctx.message.from.id, msg.message_id);
+        userResp.value.user.FullName = ctx.message.text!;
+        userResp.value.user.State["Register"] = "";
+        const updateResp = await UpdateUser(userResp.value.user);
+        if (updateResp.result === "error") {
+          console.log("Error updating user state: " + updateResp.error);
+          ctx.reply(
+            "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
+            {
+              reply_parameters: {
+                message_id: ctx.message.message_id,
+              },
+            }
+          );
+        } else {
+          const msg = await ctx.reply("Твоё полное имя успешно сохранено.", {
+            reply_parameters: { message_id: ctx.message.message_id },
+          });
+          await delay(2500); //2.5 in seconds
+          ctx.deleteMessage();
+          bot.api.deleteMessage(ctx.message.from.id, msg.message_id);
+        }
       }
     } else if (userResp.value.user.State["Register"] === "Birthdate") {
       const date = parseDate(ctx.message.text!);
@@ -213,7 +255,7 @@ bot.on("message", async (ctx) => {
           { reply_parameters: { message_id: ctx.message.message_id! } }
         );
       } else {
-        userResp.value.user.Birthdate = formatDate(date);
+        userResp.value.user.Birthdate = formatDateToSurreal(date);
         userResp.value.user.State["Register"] = "";
         const updateResp = await UpdateUser(userResp.value.user);
         if (updateResp.result === "error") {
