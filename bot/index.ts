@@ -70,7 +70,8 @@ bot.command("start", async (ctx) => {
     const menu = MakeStartMenu(userResp.value.user);
     await ctx.reply(menu[1], {
       reply_markup: menu[0],
-      reply_parameters: { message_id: ctx.message?.message_id! },
+      reply_parameters: { message_id: ctx.message?.message_id!},
+      
     });
   }
   /*await ctx.reply("Привет!", {
@@ -106,6 +107,8 @@ bot.command("conscience", async (ctx) => {
     } else if (resp.result === "success") {
       ctx.reply(resp.value.text, {
         reply_parameters: { message_id: ctx.message?.message_id! },
+        reply_markup: {remove_keyboard: true},
+        parse_mode: 'HTML'
       });
     }
   }
@@ -306,7 +309,7 @@ async function sendDailyMessage() {
 
   for (var user of users) {
     try {
-      await bot.api.sendMessage(user.id.ID.replace("tg", ""), text);
+      await bot.api.sendMessage(user.id.ID.replace("tg", ""), text, {parse_mode:"HTML"});
     } catch (err) {
       if (err instanceof HttpError) {
         console.error(`Could not connect to Telegram: `, err.message);
