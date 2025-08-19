@@ -46,7 +46,7 @@ bot.command("start", async (ctx) => {
       Surname: ctx.message?.from.last_name!,
       LanguageCode: ctx.message?.from.language_code!,
       FullName: "",
-      Subscsriber: false,
+      Subscsriber: true,
       Email: "",
       Birthdate: "",
       Balance: 0,
