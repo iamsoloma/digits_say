@@ -165,10 +165,46 @@ func GetYearNumber(birthdate string) (int, error) {
 }
 
 func GetCommonDay() (int, error) {
+
 	strtime := time.Now().String()
-	resp, err := strconv.Atoi(string(strtime[9]))
+	d1, err := strconv.Atoi(string(strtime[8]))
 	if err != nil {
-		return 0, fmt.Errorf("invalid day in birthdate: %w", err)
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+	d2, err := strconv.Atoi(string(strtime[9]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+
+	m1, err := strconv.Atoi(string(strtime[5]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+	m2, err := strconv.Atoi(string(strtime[6]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+
+	y1, err := strconv.Atoi(string(strtime[3]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+	y3, err := strconv.Atoi(string(strtime[2]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+	y2, err := strconv.Atoi(string(strtime[1]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+	y4, err := strconv.Atoi(string(strtime[0]))
+	if err != nil {
+		return 0, fmt.Errorf("can`t parce current time: %w", err)
+	}
+
+	resp, err := reduction(d1 + d2 + m1 + m2 + y1 + y2 + y3 + y4)
+	if err != nil {
+		return 0, err
 	}
 
 	return resp, nil

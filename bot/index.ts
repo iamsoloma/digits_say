@@ -292,8 +292,8 @@ async function sendDailyMessage() {
 
   var reqtext = await GetCommonDayText();
   if (reqtext.result === "error") {
-    //console.log(res.error);
-    throw Error(reqtext.error);
+    console.log(reqtext.error);
+    //throw Error(reqtext.error);
   } else {
     text = reqtext.value.text;
   }
