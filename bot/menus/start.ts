@@ -11,7 +11,10 @@ export function MakeStartMenu(user: User): [InlineKeyboard, string] {
     text = `Привет ${user.Name}, давай знакомиться!`;
   } else {
     const birthdate = user.Birthdate.slice(8, 10)+"."+user.Birthdate.slice(5, 7)+"."+user.Birthdate.slice(0, 4)
-    text = `Полное имя: ${user.FullName}\nДата рождения: ${birthdate}\nБаланс: ${user.Balance}\nИмя для обращений: ${user.Name}\nФамилия: ${user.Surname}`;
+    var sub: string
+    if (user.Subscriber) {sub="Да"} else {sub="Нет"}
+
+    text = `Полное имя: ${user.FullName}\nДата рождения: ${birthdate}\nБаланс: ${user.Balance}\nИмя для обращений: ${user.Name}\nФамилия: ${user.Surname}\nПодписчик: ${sub}`;
   }
 
   if (user.FullName === "") {
