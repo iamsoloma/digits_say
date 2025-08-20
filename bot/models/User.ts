@@ -7,7 +7,7 @@ export type User = {
   Name: string;
   Surname: string;
   FullName: string;
-  Subscsriber: boolean;
+  Subscriber: boolean;
   LanguageCode: string;
   Email: string;
   Birthdate: string;
