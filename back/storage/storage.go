@@ -22,7 +22,7 @@ type User struct {
 	LanguageCode string                 `json:"LanguageCode"`
 	Email        string                 `json:"Email"`
 	Birthdate    string                 `json:"Birthdate"`
-	Balance      int                    `json:"Balance"`
+	Balance      float32                `json:"Balance"`
 }
 type Conscience struct {
 	ID      models.RecordID `json:"id,omitempty"`
@@ -134,12 +134,12 @@ func (s *Storage) GetCommonDayText() (common *CommonDay, exist bool, err error) 
 	}
 
 	id, err := digits.GetCommonDay()
-	if err!=nil{
+	if err != nil {
 		return nil, false, err
 	}
 
 	common, err = surrealdb.Select[CommonDay](s.ctx, s.db, models.RecordID{Table: "CommonDay", ID: id})
-	if err!=nil{
+	if err != nil {
 		return nil, false, nil
 	}
 

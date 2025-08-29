@@ -37,13 +37,14 @@ export function MakeStartMenu(user: User): [InlineKeyboard, string] {
   }
   start.row();
 
+
+  start.text("Пополнить баланс", "State=Balance.Amount")
   var msg: string;
   if (user.Subscriber) {
     msg = "Отписаться от рассылки";
   } else {
     msg = "Подписаться на ежедневную рассылку";
   }
-
   start.text(msg, "ChangeSubscription");
   start.row();
 

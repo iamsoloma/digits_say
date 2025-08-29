@@ -117,7 +117,11 @@ bot.command("conscience", async (ctx) => {
 });
 
 bot.callbackQuery(
-  ["State=Register.FullName", "State=Register.Birthdate"],
+  [
+    "State=Register.FullName",
+    "State=Register.Birthdate",
+    "State=Balance.Amount",
+  ],
   async (ctx) => {
     const userResp = await GetUserByID(
       "tg" + String(ctx.callbackQuery.from.id)
@@ -139,6 +143,9 @@ bot.callbackQuery(
       if (ctx.callbackQuery.data === "State=Register.Birthdate") {
         userResp.value.user.State["Register"] = "Birthdate";
       }
+      if (ctx.callbackQuery.data === "State=Balance.Amount") {
+        userResp.value.user.State["Balance"] = "Amount";
+      }
 
       const updateResp = await UpdateUser(userResp.value.user);
       if (updateResp.result === "error") {
@@ -159,6 +166,9 @@ bot.callbackQuery(
         }
         if (ctx.callbackQuery.data === "State=Register.Birthdate") {
           msg = "Введи свою дату рождения в формате ДД.ММ.ГГГГ";
+        }
+        if (ctx.callbackQuery.data === "State=Balance.Amount") {
+          msg = "Введи количество звёзд для пополнения(1 🌟 ~ 1.5 рубля):";
         }
         await ctx.api.editMessageText(
           ctx.chatId!,
@@ -183,6 +193,7 @@ bot.callbackQuery(["backToStart"], async (ctx) => {
   } else {
     if (ctx.callbackQuery.data === "backToStart") {
       userResp.value.user.State["Register"] = "";
+      userResp.value.user.State["Balance"] = "";
     }
 
     const updateResp = await UpdateUser(userResp.value.user);
@@ -251,14 +262,110 @@ bot.callbackQuery(["ChangeSubscription"], async (ctx) => {
   }
 });
 
-bot.on("message", async (ctx) => {
-  const userResp = await GetUserByID(String("tg" + ctx.message?.from.id));
+bot.on("pre_checkout_query", (ctx) => {
+  return ctx.answerPreCheckoutQuery(true).catch(() => {
+    console.error("answerPreCheckoutQuery failed");
+  });
+});
+
+bot.on("message:successful_payment", async (ctx) => {
+  if (!ctx.message || !ctx.message.successful_payment || !ctx.from) {
+    return;
+  }
+  const userResp = await GetUserByID(String("tg" + ctx.message.from.id));
   if (userResp.result === "error" && userResp.error !== "404") {
     console.log("Error getting user by Telegram ID: " + userResp.error);
     ctx.reply("Произошла ошибка при получении пользователя. Попробуй позже.", {
       reply_parameters: { message_id: ctx.message.message_id },
     });
   } else if (userResp.result === "error" && userResp.error === "404") {
+    ctx.reply(
+      "Похоже, что ты ещё не зарегистрирован. Напиши /start, чтобы начать.",
+      { reply_parameters: { message_id: ctx.message.message_id } }
+    );
+  } else if (userResp.result === "success") {
+    userResp.value.user.State["Balance"] = "";
+    userResp.value.user.Balance +=
+      ctx.message.successful_payment.total_amount * 1.5;
+    const updateResp = await UpdateUser(userResp.value.user);
+    if (updateResp.result === "error") {
+      console.log("Error updating user state: " + updateResp.error);
+      ctx.reply(
+        "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
+        {
+          reply_parameters: {
+            message_id: ctx.message.message_id,
+          },
+        }
+      );
+    } else {
+      const msg = await ctx.reply(
+        "Баланс успешно пополнен! ID транзакции: " +
+          ctx.message.successful_payment.telegram_payment_charge_id,
+        {
+          reply_parameters: { message_id: ctx.message.message_id },
+        }
+      );
+    }
+  }
+});
+
+bot.command("refund", async (ctx) => {
+  const transactionID = ctx.match;
+
+  bot.api
+    .refundStarPayment(ctx.from?.id!, transactionID)
+    .then(async () => {
+      const userResp = await GetUserByID(String("tg" + ctx.message?.from.id!));
+      if (userResp.result === "error" && userResp.error !== "404") {
+        console.log("Error getting user by Telegram ID: " + userResp.error);
+        ctx.reply(
+          "Произошла ошибка при получении пользователя. Попробуй позже.",
+          {
+            reply_parameters: { message_id: ctx.message?.message_id! },
+          }
+        );
+      } else if (userResp.result === "error" && userResp.error === "404") {
+        ctx.reply(
+          "Похоже, что ты ещё не зарегистрирован. Напиши /start, чтобы начать.",
+          { reply_parameters: { message_id: ctx.message?.message_id! } }
+        );
+      } else if (userResp.result === "success") {
+        const trList = await ctx.api.getStarTransactions();
+        var amount:number = 0.0
+        for (let t of trList.transactions) {
+          if (transactionID === t.id) {
+            amount = t.amount
+          }
+        }
+        userResp.value.user.Balance -= amount * 1.5;
+        const updateResp = await UpdateUser(userResp.value.user);
+        if (updateResp.result === "error") {
+          console.log("Error updating user state: " + updateResp.error);
+          ctx.reply(
+            "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
+            {
+              reply_parameters: {
+                message_id: ctx.message?.message_id!,
+              },
+            }
+          );
+        }
+      }
+      return ctx.reply("Успешный возврат");
+    })
+    .catch(() => ctx.reply("Refund failed"));
+});
+
+bot.on("message:text", async (ctx) => {
+  const userResp = await GetUserByID(String("tg" + ctx.message?.from.id!));
+  if (userResp.result === "error" && userResp.error !== "404") {
+    console.log("Error getting user by Telegram ID: " + userResp.error);
+    ctx.reply("Произошла ошибка при получении пользователя. Попробуй позже.", {
+      reply_parameters: { message_id: ctx.message.message_id },
+    });
+  } else if (userResp.result === "error" && userResp.error === "404") {
+    console.log("Message");
     ctx.reply(
       "Похоже, что ты ещё не зарегистрирован. Напиши /start, чтобы начать.",
       { reply_parameters: { message_id: ctx.message.message_id } }
@@ -323,6 +430,36 @@ bot.on("message", async (ctx) => {
           await delay(2500); //2.5 in seconds
           ctx.deleteMessage();
           bot.api.deleteMessage(ctx.message.from.id, msg.message_id);
+        }
+      }
+    } else if ((userResp.value.user.State["Balance"] = "Amount")) {
+      const Amount = Number(ctx.message.text!);
+      if (!Amount || Amount < 1) {
+        console.log("Error parsing amount in " + ctx.message.text!);
+        ctx.reply("Неверно указано целое число звёзд.", {
+          reply_parameters: { message_id: ctx.message.message_id! },
+        });
+      } else {
+        userResp.value.user.State["Balance"] = "Processing";
+        const updateResp = await UpdateUser(userResp.value.user);
+        if (updateResp.result === "error") {
+          console.log("Error updating user state: " + updateResp.error);
+          ctx.reply(
+            "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
+            {
+              reply_parameters: {
+                message_id: ctx.message.message_id,
+              },
+            }
+          );
+        } else {
+          const msg = await ctx.replyWithInvoice(
+            "Пополнение баланса",
+            "Пополнение балнса на Digits Say",
+            "{}",
+            "XTR",
+            [{ amount: Amount, label: "Пополнение баланса" }]
+          );
         }
       }
     }
