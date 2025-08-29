@@ -39,6 +39,7 @@ export function MakeStartMenu(user: User): [InlineKeyboard, string] {
 
 
   start.text("Пополнить баланс", "State=Balance.Amount")
+  start.row()
   var msg: string;
   if (user.Subscriber) {
     msg = "Отписаться от рассылки";

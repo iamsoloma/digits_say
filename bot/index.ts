@@ -24,6 +24,7 @@ const bot = new Bot(process.env.BOT_API_TOKEN!);
 bot.api.setMyCommands([
   { command: "start", description: "Запуск" },
   //{ command: "menu", description: "Получить меню" },
+  {command: "refund", description: "Возвращает деньги, /refund <ID транзакции>"},
   {
     command: "conscience",
     description: "Получить рекомендацию на основе числа сознания",
