@@ -24,7 +24,10 @@ const bot = new Bot(process.env.BOT_API_TOKEN!);
 bot.api.setMyCommands([
   { command: "start", description: "Запуск" },
   //{ command: "menu", description: "Получить меню" },
-  { command: "conscience", description: "Получить рекомендацию на основе числа сознания" },
+  {
+    command: "conscience",
+    description: "Получить рекомендацию на основе числа сознания",
+  },
 ]);
 
 bot.command("start", async (ctx) => {
@@ -70,8 +73,7 @@ bot.command("start", async (ctx) => {
     const menu = MakeStartMenu(userResp.value.user);
     await ctx.reply(menu[1], {
       reply_markup: menu[0],
-      reply_parameters: { message_id: ctx.message?.message_id!},
-      
+      reply_parameters: { message_id: ctx.message?.message_id! },
     });
   }
   /*await ctx.reply("Привет!", {
@@ -107,8 +109,8 @@ bot.command("conscience", async (ctx) => {
     } else if (resp.result === "success") {
       ctx.reply(resp.value.text, {
         reply_parameters: { message_id: ctx.message?.message_id! },
-        reply_markup: {remove_keyboard: true},
-        parse_mode: 'HTML'
+        reply_markup: { remove_keyboard: true },
+        parse_mode: "HTML",
       });
     }
   }
@@ -196,6 +198,49 @@ bot.callbackQuery(["backToStart"], async (ctx) => {
       );
     } else {
       const menu = MakeStartMenu(userResp.value.user);
+      await ctx.api.editMessageText(
+        ctx.chatId!,
+        ctx.callbackQuery.message?.message_id!,
+        menu[1],
+        { reply_markup: menu[0] }
+      );
+    }
+  }
+});
+
+bot.callbackQuery(["ChangeSubscription"], async (ctx) => {
+  const userResp = await GetUserByID("tg" + String(ctx.callbackQuery.from.id));
+  if (userResp.result === "error") {
+    console.log("Error getting user by Telegram ID: " + userResp.error);
+    ctx.reply("Произошла ошибка при получении пользователя. Попробуй позже.", {
+      reply_parameters: {
+        message_id: ctx.callbackQuery.message?.message_id!,
+      },
+    });
+  } else {
+    if (ctx.callbackQuery.data === "ChangeSubscription") {
+      userResp.value.user.State["Register"] = "";
+      if (userResp.value.user.Subscriber === true) {
+        userResp.value.user.Subscriber = false;
+      } else {
+        userResp.value.user.Subscriber = true;
+      }
+    }
+
+    const updateResp = await UpdateUser(userResp.value.user);
+    if (updateResp.result === "error") {
+      console.log("Error updating user state: " + updateResp.error);
+      ctx.reply(
+        "Произошла ошибка при обновлении состояния пользователя. Попробуй позже.",
+        {
+          reply_parameters: {
+            message_id: ctx.callbackQuery.message?.message_id!,
+          },
+        }
+      );
+    } else {
+      const menu = MakeStartMenu(userResp.value.user);
+      console.log(menu[1]);
       await ctx.api.editMessageText(
         ctx.chatId!,
         ctx.callbackQuery.message?.message_id!,
@@ -309,7 +354,9 @@ async function sendDailyMessage() {
 
   for (var user of users) {
     try {
-      await bot.api.sendMessage(user.id.ID.replace("tg", ""), text, {parse_mode:"HTML"});
+      await bot.api.sendMessage(user.id.ID.replace("tg", ""), text, {
+        parse_mode: "HTML",
+      });
     } catch (err) {
       if (err instanceof HttpError) {
         console.error(`Could not connect to Telegram: `, err.message);
